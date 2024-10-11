@@ -1,0 +1,14 @@
+[package]
+name = "ferriscare"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "ferriscare_server"
+path = "src/bin/server/main.rs"
+
+[lib]
+name = "ferriscare"
+path = "src/lib/lib.rs"
+
+[dependencies]
