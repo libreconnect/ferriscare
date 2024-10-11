@@ -12,3 +12,5 @@ name = "ferriscare"
 path = "src/lib/lib.rs"
 
 [dependencies]
+thiserror = "1.0.64"
+uuid = "1.10.0"
