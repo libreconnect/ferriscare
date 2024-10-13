@@ -2,7 +2,8 @@ use std::sync::Arc;
 
 use ferriscare::{
     application::http::{HttpServer, HttpServerConfig},
-    infrastructure::db::neo4j::Neo4j,
+    domain::professional::services::ProfessionalServiceImpl,
+    infrastructure::{db::neo4j::Neo4j, professional::neo4j::professional_repository::Neo4jProfessionalRepository},
 };
 
 #[tokio::main]
@@ -15,15 +16,9 @@ async fn main() -> anyhow::Result<()> {
 
     let server_config = HttpServerConfig { port: "3333" };
 
-    // let professional_repository = Neo4jProfessionalRepository::new(Arc::clone(&neo4j));
+    let professional_repository = Neo4jProfessionalRepository::new(Arc::clone(&neo4j));
+    let professional_service = ProfessionalServiceImpl::new(professional_repository);
 
-    // let _ = professional_repository
-    //     .create("Nathael", "nathael@bonnal.cloud")
-    //     .await;
-    // let _ = professional_repository
-    //     .create("Martin", "martin@matin.io")
-    //     .await;
-
-    let http_server = HttpServer::new(server_config).await?;
+    let http_server = HttpServer::new(server_config, Arc::new(professional_service)).await?;
     http_server.run().await
 }
