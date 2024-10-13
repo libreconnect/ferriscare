@@ -15,5 +15,9 @@ pub trait ProfessionalRepository: Clone + Send + Sync + 'static {
 }
 
 pub trait ProfessionalService: Clone + Send + Sync + 'static {
-    fn create(&self) -> impl Future<Output = Result<Professional, ProfessionalError>> + Send;
+    fn create(
+        &self,
+        name: &str,
+        email: &str,
+    ) -> impl Future<Output = Result<Professional, ProfessionalError>> + Send;
 }
