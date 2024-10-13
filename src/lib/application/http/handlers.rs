@@ -1,6 +1,8 @@
 use axum::{http::StatusCode, response::IntoResponse, Json};
 use serde::Serialize;
 
+pub mod create_professional;
+
 pub struct ApiSuccess<T: Serialize + PartialEq>(StatusCode, Json<ApiResponseBody<T>>);
 
 impl<T> PartialEq for ApiSuccess<T>
