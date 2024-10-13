@@ -26,7 +26,7 @@ impl<P> ProfessionalService for ProfessionalServiceImpl<P>
 where
     P: ProfessionalRepository,
 {
-    async fn create(&self) -> Result<Professional, ProfessionalError> {
-        todo!()
+    async fn create(&self, name: &str, email: &str) -> Result<Professional, ProfessionalError> {
+        self.professional_repository.create(name, email).await
     }
 }
