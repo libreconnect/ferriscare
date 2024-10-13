@@ -13,9 +13,11 @@ path = "src/lib/lib.rs"
 
 [dependencies]
 anyhow = "1.0.89"
+async-nats = "0.37.0"
 axum = "0.7.7"
 axum-keycloak-auth = "0.6.0"
 dotenv = "0.15.0"
+futures = "0.3.31"
 neo4rs = "0.8.0"
 serde = "1.0.210"
 thiserror = "1.0.64"
