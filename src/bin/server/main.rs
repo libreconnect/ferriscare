@@ -1,11 +1,8 @@
 use std::sync::Arc;
 
-use anyhow::Ok;
 use ferriscare::{
     application::http::{HttpServer, HttpServerConfig},
-    infrastructure::{
-        db::neo4j::Neo4j, professional::neo4j::professional_repository::Neo4jProfessionalRepository,
-    },
+    infrastructure::db::neo4j::Neo4j,
 };
 
 #[tokio::main]
