@@ -70,19 +70,22 @@ pub struct ApiErrorData {
 impl IntoResponse for ApiError {
     fn into_response(self) -> axum::response::Response {
         match self {
-            ApiError::InternalServerError(e) => {
-                (
+            ApiError::InternalServerError(e) => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiResponseBody::new_error(
                     StatusCode::INTERNAL_SERVER_ERROR,
-                    Json(ApiResponseBody::new_error(
-                        StatusCode::INTERNAL_SERVER_ERROR,
-                        "Internal Server Error".to_string(),
-                    )),
-                ).into_response()
-            }
+                    format!("Internal Server Error: {}", e),
+                )),
+            )
+                .into_response(),
             ApiError::UnProcessableEntity(message) => (
                 StatusCode::UNPROCESSABLE_ENTITY,
-                Json(ApiResponseBody::new_error(StatusCode::UNPROCESSABLE_ENTITY, message))
-            ).into_response()
+                Json(ApiResponseBody::new_error(
+                    StatusCode::UNPROCESSABLE_ENTITY,
+                    message,
+                )),
+            )
+                .into_response(),
         }
     }
 }
