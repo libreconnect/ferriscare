@@ -32,17 +32,17 @@ impl From<ParseCreateProfessionalError> for ApiError {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct CreateProfessionalResponseData {
-  id: String,
-  name: String,
-  email: String,
+    id: String,
+    name: String,
+    email: String,
 }
 
 impl From<&Professional> for CreateProfessionalResponseData {
     fn from(professional: &Professional) -> Self {
         CreateProfessionalResponseData {
-          id: professional.id.to_string(),
-          name: professional.name.as_str().to_string(),
-          email: professional.email.as_str().to_string(),
+            id: professional.id.to_string(),
+            name: professional.name.as_str().to_string(),
+            email: professional.email.as_str().to_string(),
         }
     }
 }

@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
+use crate::application::http::handlers::create_professional::create_professional;
 use anyhow::Context;
 use axum::{routing::post, Extension};
-use crate::application::http::handlers::create_professional::create_professional;
 use tokio::net;
 use tracing::{info, info_span};
 
@@ -75,6 +75,5 @@ fn api_routes<P>() -> axum::Router<AppState<P>>
 where
     P: ProfessionalService + Send + Sync + 'static,
 {
-    axum::Router::new()
-    .route("/professionals", post(create_professional::<P>))
+    axum::Router::new().route("/professionals", post(create_professional::<P>))
 }
