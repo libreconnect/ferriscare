@@ -11,6 +11,8 @@ pub struct Professional {
 pub enum ProfessionalError {
     #[error("Error creating professional: {0}")]
     CreateError(String),
+    #[error("{0}")]
+    DuplicateEmail(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]

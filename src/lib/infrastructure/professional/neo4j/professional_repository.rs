@@ -16,8 +16,25 @@ pub struct Neo4jProfessionalRepository {
 }
 
 impl Neo4jProfessionalRepository {
-    pub fn new(neo4j: Arc<Neo4j>) -> Neo4jProfessionalRepository {
-        Neo4jProfessionalRepository { neo4j }
+    pub async fn new(neo4j: Arc<Neo4j>) -> Neo4jProfessionalRepository {
+        let professional_repository = Neo4jProfessionalRepository { neo4j };
+
+        let _ = professional_repository.initialize_constraints().await;
+
+        professional_repository
+    }
+
+    pub async fn initialize_constraints(&self) {
+        let create_constraint_query = query("
+            CREATE CONSTRAINT unique_professional_email IF NOT EXISTS  FOR (p:Professional) REQUIRE p.email IS UNIQUE;
+        ");
+
+        let t = self.neo4j.get_graph().run(create_constraint_query).await;
+
+        match t {
+            Ok(_) => (),
+            Err(e) => println!("{:?}", e),
+        }
     }
 }
 
@@ -41,9 +58,25 @@ impl ProfessionalRepository for Neo4jProfessionalRepository {
 
         match result {
             Ok(_) => Ok(professional),
-            Err(_) => Err(ProfessionalError::CreateError(
-                "Error creating professional".to_string(),
-            )),
+            Err(e) => {
+                println!("{:?}", e);
+                match e {
+                    neo4rs::Error::Neo4j(neo4j_error) => {
+                        println!("{:?}", neo4j_error.code());
+                        let code = neo4j_error.code();
+                        if code == "Neo.ClientError.Schema.ConstraintValidationFailed" {
+                            return Err(ProfessionalError::DuplicateEmail(
+                                "Email already exists".to_string(),
+                            ));
+                        }
+                        //Err(ProfessionalError::CreateError("".to_string()))
+                        Err(ProfessionalError::CreateError(
+                            "error creating professional in neo4j database".to_string(),
+                        ))
+                    }
+                    _ => Err(ProfessionalError::CreateError(format!("{:?}", e))),
+                }
+            }
         }
     }
 

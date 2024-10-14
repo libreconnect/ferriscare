@@ -51,6 +51,7 @@ impl From<ProfessionalError> for ApiError {
     fn from(e: ProfessionalError) -> Self {
         match e {
             ProfessionalError::CreateError(e) => Self::InternalServerError(e),
+            ProfessionalError::DuplicateEmail(e) => Self::InternalServerError(e),
         }
     }
 }

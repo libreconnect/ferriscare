@@ -49,7 +49,7 @@ impl HttpServer {
         };
 
         let router = axum::Router::new()
-            .nest("/api", api_routes())
+            .nest("/v1", api_routes())
             .layer(trace_layer)
             .layer(Extension(Arc::clone(&state.professional_service)))
             .with_state(state);

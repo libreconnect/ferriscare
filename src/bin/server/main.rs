@@ -18,7 +18,7 @@ async fn main() -> anyhow::Result<()> {
 
     let server_config = HttpServerConfig { port: "3333" };
 
-    let professional_repository = Neo4jProfessionalRepository::new(Arc::clone(&neo4j));
+    let professional_repository = Neo4jProfessionalRepository::new(Arc::clone(&neo4j)).await;
     let professional_service = ProfessionalServiceImpl::new(professional_repository);
 
     let http_server = HttpServer::new(server_config, Arc::new(professional_service)).await?;
