@@ -17,7 +17,7 @@
 
 <br />
 
-**Ferris Company** is an open-source Rust microservice designed to manage companies and their related data in a **Neo4J** graph database. Built for scalability and performance, it leverages the speed of Rust and the flexibility of Neo4J for handling complex relationships between businesses.
+**Ferris Care** is an open-source Rust microservice designed to manage patients & professionals and their related data in a **Neo4J** graph database. Built for scalability and performance, it leverages the speed of Rust and the flexibility of Neo4J for handling complex relationships between businesses.
 
 ## ✨ Features
 
