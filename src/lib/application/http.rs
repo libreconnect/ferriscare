@@ -1,6 +1,6 @@
 use std::{sync::Arc, vec};
 
-use crate::application::http::handlers::create_professional::create_professional;
+use crate::{application::http::handlers::create_professional::create_professional, env::Env};
 use anyhow::Context;
 use axum::{
     routing::{get, post},
@@ -50,6 +50,7 @@ impl HttpServer {
     pub async fn new<P>(
         config: HttpServerConfig,
         professional_service: Arc<P>,
+        env: Arc<Env>,
     ) -> anyhow::Result<Self>
     where
         P: ProfessionalService + Send + Sync,
@@ -67,8 +68,8 @@ impl HttpServer {
 
         let keycloak_auth_instance = KeycloakAuthInstance::new(
             KeycloakConfig::builder()
-                .server(Url::parse("http://localhost:8080/").unwrap())
-                .realm(String::from("libreconnect"))
+                .server(Url::parse(&env.keycloak_url).unwrap())
+                .realm(String::from(&env.keycloak_realm))
                 .build(),
         );
 
