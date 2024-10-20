@@ -29,4 +29,8 @@ where
     async fn create(&self, name: &str, email: &str) -> Result<Professional, ProfessionalError> {
         self.professional_repository.create(name, email).await
     }
+
+    async fn find_by_id(&self, id: String) -> Result<Professional, ProfessionalError> {
+        self.professional_repository.find_by_id(id).await
+    }
 }

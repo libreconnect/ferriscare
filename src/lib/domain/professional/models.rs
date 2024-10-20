@@ -1,3 +1,4 @@
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -7,12 +8,33 @@ pub struct Professional {
     pub email: Email,
 }
 
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+pub struct ProfessionalRow {
+    pub id: String,
+    pub name: String,
+    pub email: String,
+}
+
+impl From<&ProfessionalRow> for Professional {
+    fn from(professional_row: &ProfessionalRow) -> Self {
+        Self {
+            id: uuid::Uuid::parse_str(&professional_row.id).unwrap(),
+            name: Name::new(professional_row.name.as_str()).unwrap(),
+            email: Email::new(professional_row.email.as_str()).unwrap(),
+        }
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum ProfessionalError {
     #[error("Error creating professional: {0}")]
     CreateError(String),
     #[error("{0}")]
     DuplicateEmail(String),
+    #[error("Professional not found: {0}")]
+    NotFound(String),
+    #[error("Database error: {0}")]
+    DatabaseError(String),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]

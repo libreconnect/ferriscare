@@ -20,4 +20,8 @@ pub trait ProfessionalService: Clone + Send + Sync + 'static {
         name: &str,
         email: &str,
     ) -> impl Future<Output = Result<Professional, ProfessionalError>> + Send;
+    fn find_by_id(
+        &self,
+        id: String,
+    ) -> impl Future<Output = Result<Professional, ProfessionalError>> + Send;
 }
