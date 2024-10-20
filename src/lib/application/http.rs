@@ -19,7 +19,6 @@ use tracing::{info, info_span};
 use crate::domain::professional::ports::ProfessionalService;
 
 mod handlers;
-mod layers;
 mod responses;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
