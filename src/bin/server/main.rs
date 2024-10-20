@@ -43,6 +43,11 @@ async fn main() -> anyhow::Result<()> {
     let professional_repository = Neo4jProfessionalRepository::new(Arc::clone(&neo4j)).await;
     let professional_service = ProfessionalServiceImpl::new(professional_repository);
 
-    let http_server = HttpServer::new(server_config, Arc::new(professional_service)).await?;
+    let http_server = HttpServer::new(
+        server_config,
+        Arc::new(professional_service),
+        Arc::clone(&env),
+    )
+    .await?;
     http_server.run().await
 }

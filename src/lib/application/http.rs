@@ -1,18 +1,25 @@
-use std::sync::Arc;
+use std::{sync::Arc, vec};
 
-use crate::application::http::handlers::create_professional::create_professional;
+use crate::{application::http::handlers::create_professional::create_professional, env::Env};
 use anyhow::Context;
 use axum::{
     routing::{get, post},
     Extension,
 };
+use axum_keycloak_auth::{
+    instance::{KeycloakAuthInstance, KeycloakConfig},
+    layer::KeycloakAuthLayer,
+    PassthroughMode,
+};
 use handlers::get_professional::get_professional;
+use reqwest::Url;
 use tokio::net;
 use tracing::{info, info_span};
 
 use crate::domain::professional::ports::ProfessionalService;
 
 mod handlers;
+mod layers;
 mod responses;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -43,6 +50,7 @@ impl HttpServer {
     pub async fn new<P>(
         config: HttpServerConfig,
         professional_service: Arc<P>,
+        env: Arc<Env>,
     ) -> anyhow::Result<Self>
     where
         P: ProfessionalService + Send + Sync,
@@ -58,9 +66,24 @@ impl HttpServer {
             professional_service,
         };
 
+        let keycloak_auth_instance = KeycloakAuthInstance::new(
+            KeycloakConfig::builder()
+                .server(Url::parse(&env.keycloak_url).unwrap())
+                .realm(String::from(&env.keycloak_realm))
+                .build(),
+        );
+
+        let auth_layer = KeycloakAuthLayer::<String>::builder()
+            .instance(keycloak_auth_instance)
+            .passthrough_mode(PassthroughMode::Block)
+            .persist_raw_claims(false)
+            .expected_audiences(vec![String::from("account")])
+            .build();
+
         let router = axum::Router::new()
             .nest("/v1", api_routes())
             .layer(trace_layer)
+            .layer(auth_layer)
             .layer(Extension(Arc::clone(&state.professional_service)))
             .with_state(state);
 

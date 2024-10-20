@@ -10,6 +10,11 @@ pub struct Env {
     pub database_password: String,
 
     #[clap(env)]
+    pub keycloak_url: String,
+    #[clap(env)]
+    pub keycloak_realm: String,
+
+    #[clap(env)]
     pub nats_url: String,
 
     #[clap(env)]
