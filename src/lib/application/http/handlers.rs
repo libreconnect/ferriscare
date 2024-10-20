@@ -2,6 +2,7 @@ use axum::{http::StatusCode, response::IntoResponse, Json};
 use serde::Serialize;
 
 pub mod create_professional;
+pub mod get_professional;
 
 pub struct ApiSuccess<T: Serialize + PartialEq>(StatusCode, Json<ApiResponseBody<T>>);
 
@@ -30,6 +31,7 @@ impl<T: Serialize + PartialEq> IntoResponse for ApiSuccess<T> {
 pub enum ApiError {
     InternalServerError(String),
     UnProcessableEntity(String),
+    NotFound(String),
 }
 
 impl From<anyhow::Error> for ApiError {
@@ -84,6 +86,11 @@ impl IntoResponse for ApiError {
                     StatusCode::UNPROCESSABLE_ENTITY,
                     message,
                 )),
+            )
+                .into_response(),
+            ApiError::NotFound(message) => (
+                StatusCode::NOT_FOUND,
+                Json(ApiResponseBody::new_error(StatusCode::NOT_FOUND, message)),
             )
                 .into_response(),
         }

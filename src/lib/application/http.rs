@@ -2,7 +2,11 @@ use std::sync::Arc;
 
 use crate::application::http::handlers::create_professional::create_professional;
 use anyhow::Context;
-use axum::{routing::post, Extension};
+use axum::{
+    routing::{get, post},
+    Extension,
+};
+use handlers::get_professional::get_professional;
 use tokio::net;
 use tracing::{info, info_span};
 
@@ -12,8 +16,14 @@ mod handlers;
 mod responses;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct HttpServerConfig<'a> {
-    pub port: &'a str,
+pub struct HttpServerConfig {
+    pub port: String,
+}
+
+impl HttpServerConfig {
+    pub fn new(port: String) -> Self {
+        Self { port }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -30,12 +40,12 @@ pub struct HttpServer {
 }
 
 impl HttpServer {
-    pub async fn new<'a, P>(
-        config: HttpServerConfig<'a>,
+    pub async fn new<P>(
+        config: HttpServerConfig,
         professional_service: Arc<P>,
     ) -> anyhow::Result<Self>
     where
-        P: ProfessionalService + Send + Sync + 'a,
+        P: ProfessionalService + Send + Sync,
     {
         let trace_layer = tower_http::trace::TraceLayer::new_for_http().make_span_with(
             |request: &axum::extract::Request| {
@@ -75,5 +85,10 @@ fn api_routes<P>() -> axum::Router<AppState<P>>
 where
     P: ProfessionalService + Send + Sync + 'static,
 {
-    axum::Router::new().route("/professionals", post(create_professional::<P>))
+    axum::Router::new()
+        .route("/professionals", post(create_professional::<P>))
+        .route(
+            "/professionals/:professional_id",
+            get(get_professional::<P>),
+        )
 }
