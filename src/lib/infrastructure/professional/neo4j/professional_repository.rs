@@ -4,7 +4,7 @@ use neo4rs::query;
 
 use crate::{
     domain::professional::{
-        models::{Email, Name, Professional, ProfessionalError},
+        models::{Email, Name, Professional, ProfessionalError, ProfessionalRow},
         ports::ProfessionalRepository,
     },
     infrastructure::db::neo4j::Neo4j,
@@ -50,9 +50,10 @@ impl ProfessionalRepository for Neo4jProfessionalRepository {
             .neo4j
             .get_graph()
             .run(
-                query("CREATE (p:Professional { name: $name, email: $email })")
+                query("CREATE (p:Professional { name: $name, email: $email, id: $id })")
                     .param("name", professional.name.as_str())
-                    .param("email", professional.email.as_str()),
+                    .param("email", professional.email.as_str())
+                    .param("id", professional.id.to_string()),
             )
             .await;
 
@@ -81,17 +82,30 @@ impl ProfessionalRepository for Neo4jProfessionalRepository {
     }
 
     async fn find_by_id(&self, id: String) -> Result<Professional, ProfessionalError> {
-        let _result = self
+        let mut result = self
             .neo4j
             .get_graph()
-            .execute(query("MATCH (p:Professional) WHERE p.id = $id RETURN p").param("id", id))
+            .execute(
+                query("MATCH (p:Professional) WHERE p.id = $id RETURN p").param("id", id.clone()),
+            )
             .await
-            .unwrap();
+            .map_err(|e| {
+                ProfessionalError::DatabaseError(format!("Failed to get next result: {:?}", e))
+            })?;
 
-        Ok(Professional {
-            id: uuid::Uuid::new_v4(),
-            name: Name::new("John Doe").unwrap(),
-            email: Email::new("").unwrap(),
-        })
+        let row = result.next().await.map_err(|e| {
+            ProfessionalError::DatabaseError(format!("Failed to get next result: {:?}", e))
+        })?;
+
+        if let Some(row) = row {
+            row.get::<ProfessionalRow>("p")
+                .map(|professional_row| Ok(Professional::from(&professional_row)))
+                .map_err(|e| ProfessionalError::NotFound(e.to_string()))?
+        } else {
+            Err(ProfessionalError::NotFound(format!(
+                "Professional with id {} not found",
+                id
+            )))
+        }
     }
 }
