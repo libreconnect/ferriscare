@@ -3,12 +3,13 @@ use std::{fmt::Debug, future::Future};
 use serde::de::DeserializeOwned;
 
 pub trait MessagingSubscriberPort: Clone + Send + Sync + 'static {
-    fn subscribre<F, T>(
+    fn subscribe<F, T, Fut>(
         &self,
         topic: &str,
         handler: F,
     ) -> impl Future<Output = anyhow::Result<()>> + Send
     where
-        F: Fn(T) -> anyhow::Result<()> + Send + Sync + 'static,
+        F: Fn(T) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = anyhow::Result<()>> + Send,
         T: DeserializeOwned + Send + Sync + Debug + 'static;
 }

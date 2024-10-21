@@ -1,4 +1,4 @@
-use std::{fmt::Debug, sync::Arc};
+use std::{fmt::Debug, future::Future, sync::Arc};
 
 use async_nats::{connect, Client};
 use futures::StreamExt;
@@ -57,9 +57,10 @@ impl MessagingPort for NatsMessaging {
 }
 
 impl MessagingSubscriberPort for NatsMessaging {
-    async fn subscribre<F, T>(&self, topic: &str, handler: F) -> anyhow::Result<()>
+    async fn subscribe<F, T, Fut>(&self, topic: &str, handler: F) -> anyhow::Result<()>
     where
-        F: Fn(T) -> anyhow::Result<()> + Send + Sync + 'static,
+        F: Fn(T) -> Fut + Send + Sync + 'static,
+        Fut: Future<Output = anyhow::Result<()>> + Send,
         T: DeserializeOwned + Send + Sync + Debug + 'static,
     {
         let conn = self.get_connection();
@@ -77,7 +78,7 @@ impl MessagingSubscriberPort for NatsMessaging {
             let parsed_message: T = serde_json::from_str(&message_str)
                 .map_err(|e| anyhow::anyhow!("Failed to deserialize message: {:?}", e))?;
 
-            handler(parsed_message)?;
+            handler(parsed_message).await?;
         }
 
         Ok(())
