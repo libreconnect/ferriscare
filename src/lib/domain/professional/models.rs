@@ -15,6 +15,12 @@ pub struct ProfessionalRow {
     pub email: String,
 }
 
+#[derive(Debug, Clone, Serialize, PartialEq, Eq, PartialOrd, Ord, Deserialize)]
+pub struct ProfessionalAddRequestMessage {
+    pub professional_id: String,
+    pub company_id: String,
+}
+
 impl From<&ProfessionalRow> for Professional {
     fn from(professional_row: &ProfessionalRow) -> Self {
         Self {
