@@ -3,6 +3,7 @@ use serde::Serialize;
 
 pub mod create_professional;
 pub mod get_professional;
+pub mod health;
 
 pub struct ApiSuccess<T: Serialize + PartialEq>(StatusCode, Json<ApiResponseBody<T>>);
 

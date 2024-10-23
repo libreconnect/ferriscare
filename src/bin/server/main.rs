@@ -4,10 +4,13 @@ use clap::Parser;
 use ferriscare::{
     application::{
         http::{HttpServer, HttpServerConfig},
-        ports::{messaging_ports::MessagingPort, messaging_subscriber_port::MessagingSubscriberPort},
+        ports::{
+            messaging_ports::MessagingPort, messaging_subscriber_port::MessagingSubscriberPort,
+        },
     },
     domain::professional::{
-        models::ProfessionalAddRequestMessage, ports::{ProfessionalRepository, ProfessionalService},
+        models::ProfessionalAddRequestMessage,
+        ports::{ProfessionalRepository, ProfessionalService},
         services::ProfessionalServiceImpl,
     },
     env::Env,
@@ -53,14 +56,12 @@ async fn main() -> anyhow::Result<()> {
     http_server.run().await
 }
 
-
 async fn start_subscriptions<P, M>(
     messaging: Arc<NatsMessaging>,
     professional_service: Arc<ProfessionalServiceImpl<P, M>>,
-) 
-where
+) where
     P: ProfessionalRepository,
-    M: MessagingPort
+    M: MessagingPort,
 {
     let professional_service_cloned = Arc::clone(&professional_service);
     let messaing_clone = Arc::clone(&messaging);

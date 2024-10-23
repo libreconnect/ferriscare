@@ -11,7 +11,7 @@ use axum_keycloak_auth::{
     layer::KeycloakAuthLayer,
     PassthroughMode,
 };
-use handlers::get_professional::get_professional;
+use handlers::{get_professional::get_professional, health::liveness};
 use reqwest::Url;
 use tokio::net;
 use tracing::{info, info_span};
@@ -79,12 +79,18 @@ impl HttpServer {
             .expected_audiences(vec![String::from("account")])
             .build();
 
-        let router = axum::Router::new()
-            .nest("/v1", api_routes())
-            .layer(trace_layer)
+        let api_router = api_routes::<P>()
             .layer(auth_layer)
             .layer(Extension(Arc::clone(&state.professional_service)))
             .with_state(state);
+
+        let router = axum::Router::new()
+            .nest("/v1", api_router)
+            .layer(trace_layer)
+            .route("/health/live", get(liveness));
+        // .layer(auth_layer)
+        //.layer(Extension(Arc::clone(&state.professional_service)))
+        //.with_state(state);
 
         let listener = net::TcpListener::bind(format!("0.0.0.0:{}", config.port))
             .await
