@@ -1,6 +1,5 @@
-use std::sync::Arc;
-
 use neo4rs::*;
+use std::sync::Arc;
 
 pub struct Neo4j {
     pub graph: Arc<Graph>,
