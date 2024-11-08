@@ -37,40 +37,28 @@ jobs:
     secrets:
       PAT: ${{ secrets.GITHUB_TOKEN }}
   deploy-staging:
-    needs: [build-and-push, extract-version]
-    uses: libreconnect/infrastructure/.github/workflows/application-version-update.yaml@main
-    with:
-      environment: staging
-      key: .ferriscare.image.tag
-      path: applications/ferriscare/chart/environments/staging/values.yaml
-      ref: main
-      repository: libreconnect/ferriscare
-      version: ${{ needs.extract-version.outputs.version }}
-    secrets:
-      PAT: ${{ secrets.PAT }}
-  # update-yaml:
-  #   needs: [build-and-push, extract-version]
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout target repository
-  #       uses: actions/checkout@v4
-  #       with:
-  #         repository: 'libreconnect/infrastructure'
-  #         ref: 'main'
-  #         token: ${{ secrets.PAT }}
-  #     - name: Update deployment.yaml
-  #       env:
-  #         VERSION: ${{ needs.extract-version.outputs.version }} 
-  #       run: |
-  #         echo "Version staging qui sera déployée: $VERSION"
-  #         yq -ie ".ferriscompany.image.tag = \"$VERSION\"" applications/ferriscompany/chart/environments/dev/values.yaml
-  #     - name: Commit changes          
-  #       run: |
-  #         git config user.name "GitHub Actions"
-  #         git config user.email "github-actions[bot]@users.noreply.github.com"
-  #         git add applications/ferriscompany/chart/environments/dev/values.yaml
-  #         git commit -m "Update staging values.yml to $VERSION"
-  #         git push
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.PAT }}
-  #         VERSION: ${{ needs.extract-version.outputs.version }} 
+    runs-on: ubuntu-latest
+    needs: [extract-version]
+    steps:
+      - name: Checkout target repository
+        uses: actions/checkout@v4
+        with:
+          repository: 'libreconnect/infrastructure'
+          ref: 'main'
+          token: ${{ secrets.PAT }}
+      - name: Update deployment.yaml
+        env:
+          VERSION: ${{ needs.extract-version.outputs.version }} 
+        run: |
+          echo "Déploiement de la version $VERSION sur l'environnement staging"
+          yq -ie ".ferriscare.image.tag = \"$VERSION\"" applications/ferriscare/chart/environments/staging/values.yaml
+      - name: Commit changes
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add applications/ferriscare/chart/environments/staging/values.yaml
+          git commit -m "Deploying the $VERSION version on the staging environment"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT }}
+          VERSION: ${{ needs.extract-version.outputs.version }}
