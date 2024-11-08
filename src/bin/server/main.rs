@@ -8,14 +8,18 @@ use ferriscare::{
             messaging_ports::MessagingPort, messaging_subscriber_port::MessagingSubscriberPort,
         },
     },
-    domain::professional::{
-        models::ProfessionalAddRequestMessage,
-        ports::{ProfessionalRepository, ProfessionalService},
-        services::ProfessionalServiceImpl,
+    domain::{
+        patient::services::PatientServiceImpl,
+        professional::{
+            models::ProfessionalAddRequestMessage,
+            ports::{ProfessionalRepository, ProfessionalService},
+            services::ProfessionalServiceImpl,
+        },
     },
     env::Env,
     infrastructure::{
-        db::neo4j::Neo4j, messaging::nats::NatsMessaging,
+        db::neo4j::Neo4j, keycloak::keycloak_adapter::KeycloakAdapter,
+        messaging::nats::NatsMessaging, patient::neo4j::patient_repository::Neo4jPatientRepository,
         professional::neo4j::professional_repository::Neo4jProfessionalRepository,
     },
 };
@@ -39,17 +43,30 @@ async fn main() -> anyhow::Result<()> {
 
     let server_config = HttpServerConfig::new(env.port.clone());
 
+    let user_identity_provider = Arc::new(KeycloakAdapter::new(
+        env.keycloak_url.clone(),
+        env.keycloak_realm.clone(),
+        env.keycloak_client_id.clone(),
+        env.keycloak_client_secret.clone(),
+    ));
+
+    let patient_repository = Neo4jPatientRepository::new(Arc::clone(&neo4j)).await?;
+    let patient_service =
+        PatientServiceImpl::new(patient_repository, Arc::clone(&user_identity_provider));
+
     let professional_repository = Neo4jProfessionalRepository::new(Arc::clone(&neo4j)).await;
     let professional_service =
         ProfessionalServiceImpl::new(professional_repository, Arc::clone(&messaging));
 
     let professional_service = Arc::new(professional_service);
+    let patient_service = Arc::new(patient_service);
 
     start_subscriptions(Arc::clone(&messaging), Arc::clone(&professional_service)).await;
 
     let http_server = HttpServer::new(
         server_config,
         Arc::clone(&professional_service),
+        Arc::clone(&patient_service),
         Arc::clone(&env),
     )
     .await?;

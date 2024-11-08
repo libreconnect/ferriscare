@@ -1,6 +1,9 @@
 use std::{sync::Arc, vec};
 
-use crate::{application::http::handlers::create_professional::create_professional, env::Env};
+use crate::{
+    application::http::handlers::create_professional::create_professional,
+    domain::patient::ports::PatientService, env::Env,
+};
 use anyhow::Context;
 use axum::{
     routing::{get, post},
@@ -33,11 +36,13 @@ impl HttpServerConfig {
 }
 
 #[derive(Debug, Clone)]
-struct AppState<P>
+struct AppState<P, PA>
 where
     P: ProfessionalService,
+    PA: PatientService,
 {
     professional_service: Arc<P>,
+    patient_service: Arc<PA>,
 }
 
 pub struct HttpServer {
@@ -46,13 +51,15 @@ pub struct HttpServer {
 }
 
 impl HttpServer {
-    pub async fn new<P>(
+    pub async fn new<P, PA>(
         config: HttpServerConfig,
         professional_service: Arc<P>,
+        patient_service: Arc<PA>,
         env: Arc<Env>,
     ) -> anyhow::Result<Self>
     where
         P: ProfessionalService + Send + Sync,
+        PA: PatientService + Send + Sync,
     {
         let trace_layer = tower_http::trace::TraceLayer::new_for_http().make_span_with(
             |request: &axum::extract::Request| {
@@ -63,6 +70,7 @@ impl HttpServer {
 
         let state = AppState {
             professional_service,
+            patient_service,
         };
 
         let keycloak_auth_instance = KeycloakAuthInstance::new(
@@ -79,9 +87,10 @@ impl HttpServer {
             .expected_audiences(vec![String::from("account")])
             .build();
 
-        let api_router = api_routes::<P>()
+        let api_router = api_routes::<P, PA>()
             .layer(auth_layer)
             .layer(Extension(Arc::clone(&state.professional_service)))
+            .layer(Extension(Arc::clone(&state.patient_service)))
             .with_state(state);
 
         let router = axum::Router::new()
@@ -109,9 +118,10 @@ impl HttpServer {
     }
 }
 
-fn api_routes<P>() -> axum::Router<AppState<P>>
+fn api_routes<P, PA>() -> axum::Router<AppState<P, PA>>
 where
     P: ProfessionalService + Send + Sync + 'static,
+    PA: PatientService + Send + Sync + 'static,
 {
     axum::Router::new()
         .route("/professionals", post(create_professional::<P>))
