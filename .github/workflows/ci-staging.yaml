@@ -5,102 +5,72 @@ on:
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+-rc[0-9]+'
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
-  fmt:
+  extract-version:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract_version.outputs.VERSION }}
     steps:
-      # Step 1: Checkout code
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # Step 2: Cache Rust dependencies
-      - name: Cache cargo registry
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-registry-
-
-      # Step 3: Set up Rust
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      # Step 4: Run `cargo fmt` to check formatting
-      - name: Run cargo fmt
-        run: cargo fmt -- --check
-  clippy:
-    runs-on: ubuntu-latest
-    steps:
-      # Step 1: Checkout code
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # Step 2: Cache Rust dependencies
-      - name: Cache cargo registry
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-registry-
-
-      # Step 3: Set up Rust
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      # Step 4: Run `cargo clippy` for linting
-      - name: Run cargo clippy
-        run: cargo clippy -- --D warnings
-
-  build:
-    runs-on: ubuntu-latest
-    needs: [fmt, clippy]
-    steps:
-      # Step 1: Checkout code
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # Step 2: Cache Rust dependencies
-      - name: Cache cargo registry
-        uses: actions/cache@v3
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-registry-
-
-      - name: Cache cargo build
-        uses: actions/cache@v3
-        with:
-          path: target
-          key: ${{ runner.os }}-cargo-build-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-build-
-
-      # Step 3: Set up Rust
-      - name: Set up Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-
-      # Step 4: Build the project
-      - name: Build the project
-        run: cargo build --release
-
-      # Step 5: Run tests
-      - name: Run tests
-        run: cargo test
+      - name: Extract version
+        id: extract_version
+        run: echo "VERSION=$(echo $GITHUB_REF | sed -n 's/refs\/tags\/v//p')" >> $GITHUB_OUTPUT
+  check-service:
+    uses: libreconnect/infrastructure/.github/workflows/check-service.yaml@main
+    with:
+      repository: libreconnect/ferriscompany
+      ref: main
+    secrets:
+      PAT: ${{ secrets.GITHUB_TOKEN }}
+  build-and-push:
+    needs: [check-service, extract-version]
+    uses: libreconnect/infrastructure/.github/workflows/build-and-push.yaml@main
+    with:
+      registry: ghcr.io
+      repository: libreconnect/ferriscare
+      ref: main
+      tag: ${{ needs.extract-version.outputs.version }}
+      registry_username: ${{ github.actor }}
+    secrets:
+      PAT: ${{ secrets.GITHUB_TOKEN }}
+  deploy-staging:
+    needs: [build-and-push, extract-version]
+    uses: libreconnect/infrastructure/.github/workflows/application-version-update.yaml@main
+    with:
+      environment: staging
+      key: .ferriscare.image.tag
+      path: applications/ferriscare/chart/environments/staging/values.yaml
+      ref: main
+      repository: libreconnect/ferriscare
+      version: ${{ needs.extract-version.outputs.version }}
+    secrets:
+      PAT: ${{ secrets.PAT }}
+  # update-yaml:
+  #   needs: [build-and-push, extract-version]
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Checkout target repository
+  #       uses: actions/checkout@v4
+  #       with:
+  #         repository: 'libreconnect/infrastructure'
+  #         ref: 'main'
+  #         token: ${{ secrets.PAT }}
+  #     - name: Update deployment.yaml
+  #       env:
+  #         VERSION: ${{ needs.extract-version.outputs.version }} 
+  #       run: |
+  #         echo "Version staging qui sera déployée: $VERSION"
+  #         yq -ie ".ferriscompany.image.tag = \"$VERSION\"" applications/ferriscompany/chart/environments/dev/values.yaml
+  #     - name: Commit changes          
+  #       run: |
+  #         git config user.name "GitHub Actions"
+  #         git config user.email "github-actions[bot]@users.noreply.github.com"
+  #         git add applications/ferriscompany/chart/environments/dev/values.yaml
+  #         git commit -m "Update staging values.yml to $VERSION"
+  #         git push
+  #       env:
+  #         GITHUB_TOKEN: ${{ secrets.PAT }}
+  #         VERSION: ${{ needs.extract-version.outputs.version }} 
