@@ -13,6 +13,10 @@ pub struct Env {
     pub keycloak_url: String,
     #[clap(env)]
     pub keycloak_realm: String,
+    #[clap(env)]
+    pub keycloak_client_id: String,
+    #[clap(env)]
+    pub keycloak_client_secret: String,
 
     #[clap(env)]
     pub nats_url: String,
